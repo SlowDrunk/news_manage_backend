@@ -4,8 +4,6 @@ const Koa = require("koa2");
 const app = new Koa();
 const port = 5050;
 const bodyparser = require("koa-bodyparser");
-// 引入数据库
-const db = require("./utils/db");
 // 引入路由实例
 const router = require("./router");
 // 使用body解析插件

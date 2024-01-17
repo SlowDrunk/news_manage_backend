@@ -81,5 +81,57 @@ userRooter.post("/delete", async (ctx, next) => {
 		};
 	}
 });
+// TODO:根据前端参数动态生成sql语句
+const handleUpdateSql = (newData) => {
+	let sql = "UPDATE users SET";
+	let column = [];
+	for (let key in newData) {
+		if (newData[key] !== null && newData[key] !== undefined) {
+			// 使用参数化查询以防止 SQL 注入
+			if (typeof newData[key] === "string") {
+				column.push(`${key} = '${newData[key]}'`);
+			} else if (typeof newData[key] === "number") {
+				column.push(`${key} = ${newData[key]}`);
+			}
+		}
+	}
+	// 添加空格以修复 SQL 语法错误
+	return sql + " " + column.join(", ") + " WHERE id = " + newData.id;
+};
+// 修改用户信息
+userRooter.post("/update", async (ctx, next) => {
+	try {
+		const requestBody = ctx.request.body;
+		const querySql = `SELECT * FROM users WHERE id = ${requestBody.id}`;
+		const result = await sqlFn(querySql, db);
+		if (!requestBody.id) {
+			ctx.body = {
+				state: 405,
+				msg: "参数错误，请核实后重新操作",
+			};
+			throw new Error("缺少用户名参数");
+		}
+		if (result.data.length > 0) {
+			const sql = handleUpdateSql(requestBody);
+			const res = await sqlFn(sql, db);
+			ctx.body = {
+				state: 200,
+				msg: "修改用户信息成功",
+				data: res,
+			};
+		} else {
+			ctx.body = {
+				state: 400,
+				msg: "当前用户不存在",
+			};
+		}
+	} catch (error) {
+		console.error("修改用户信息时出错:", error);
+		ctx.body = {
+			state: 500,
+			msg: "修改用户信息失败",
+		};
+	}
+});
 
 module.exports = userRooter;
